@@ -1,1 +1,1 @@
-Código sendo feito, estou tentando juntar o C com Banco de Dados por enquanto.
+Adicionei a conexão do DB com C, e agora o C recebe as informações e o DB armazena.
