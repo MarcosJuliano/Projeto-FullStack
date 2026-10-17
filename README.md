@@ -1,1 +1,1 @@
-Adicionei a conexão do DB com C, e agora o C recebe as informações e o DB armazena.
+Adicionei a conexão do DB com C, o C recebe as informações e o DB armazena, adicionei um sistema de escolha e da para acessar a lista do BD pelo C e pedir as informações.

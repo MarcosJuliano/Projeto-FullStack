@@ -78,9 +78,12 @@ int atribui_nota(Aluno a[], int *quant) {
 }
 
 // imprimir para ver se deu certo a struct
-void imprimir(Aluno a[], int quant){
+// OBS.: antes tinha que passar parametros por conta da struct que armazenava os dados, agora n precisa pq fica tudo no BD
+void imprimir(){
 
     int matricula;
+    char nome[100];
+    double nota;
     char ver_outro = 'S';
 
     while (ver_outro == 'S')
@@ -89,27 +92,21 @@ void imprimir(Aluno a[], int quant){
         printf("\nDeseja ver as notas de qual aluno [informe a matricula] ? ");
         scanf("%d", &matricula);
 
-        int encontrou = 0;
+        int encontrou = banco_buscar_aluno(matricula, nome, &nota);
 
-        for (int i = 0; i < quant; i++)
-        {  
-            if (matricula == a[i].matricula)
-            {
-                printf("\n==================================================\n");
-                printf("O aluno %s tem a nota: %.2f", a[i].nome, a[i].nota);
-                printf("\n==================================================\n");
-
-                encontrou = 1;
-                break;
-            }
-        }
-
-        if (!encontrou){
-            {
-                printf("\n=====================================================\n");
-                printf("Matricula invalida, tente outra ou encerre o processo.");
-                printf("\n=====================================================\n");
-            }
+        if (encontrou == 1)
+        {
+            printf("\n==================================================\n");
+            printf("O aluno %s tem a nota: %.2f", nome, nota);
+            printf("\n==================================================\n");
+        } else if(encontrou == 0){
+            printf("\n=====================================================\n");
+            printf("Matricula invalida, tente outra ou encerre o processo.");
+            printf("\n=====================================================\n");
+        } else {
+            printf("\n=====================================================\n");
+            printf("Não foi possivel consultar o banco de dados.");
+            printf("\n=====================================================\n");
         }
             
         printf("\nDeseja ver outro aluno? ['S' para sim/'N' para nao]: ");
@@ -125,11 +122,37 @@ int main(void){
 
     Aluno alunos[100];
     int quant = 0;
+    int opc = 0;
     
     banco_iniciar();
 
-    atribui_nota(alunos, &quant); 
-    imprimir(alunos, quant);
+    printf("==== Oque vc deseja fazer? ====\n 1 - adicionar a nota de um aluno \n 2 - ver a nota do aluno \n 3 - ver todas notas \n 4 - apagar a nota de um aluno \n 5 - terminar o processo\n opção: ");
+    scanf("%d", &opc);
+
+    switch (opc)
+    {
+    case 1: // Adicionar nota
+        atribui_nota(alunos, &quant); 
+        break;
+    case 2: // Verificar notas
+        imprimir();
+        break;
+    case 3:
+        banco_listar_alunos();
+        break;
+    case 4: // Excluir notas
+        break;
+    case 5: // Sair do programa
+        printf("\n================================================");
+        printf("\n============= Processo finalizado. =============");
+        printf("\n================================================\n");
+        break;
+    default: // valor invalido
+        printf("\n=================================================");
+        printf("\n============ ERRO: opção invalida!!! ============");
+        printf("\n=================================================\n");
+        break;
+    }
     
     return 0;
 }
