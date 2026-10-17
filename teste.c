@@ -40,7 +40,7 @@ int atribui_nota(Aluno a[], int *quant) {
         a[*quant].matricula = matricula;
 
         printf("Qual o nome do aluno? ");
-        scanf("%s", a[*quant].nome);
+        scanf("%99s", a[*quant].nome);
         printf("Qual a nota do aluno? ");
         scanf("%f", &a[*quant].nota);
         printf("################################\n");
@@ -51,11 +51,19 @@ int atribui_nota(Aluno a[], int *quant) {
         // scanf("%f", &a[*quant].nota);
         // printf("################################\n");
 
-        printf("\nDeseja adicionar mais um aluno? ['S' para sim/'N' para nao]: ");
-        scanf(" %c", &add);
+        //Gravar os alunos no BD
+        if(!banco_inserir_alunos(a[*quant].matricula, a[*quant].nome, a[*quant].nota)){
+            printf("Falha ao gravar o aluno no banco.\n");
+            continue;
+        }
+
+        printf("Aluno cadastrado com sucesso!\n");
 
         (*quant)++;
         
+        printf("\nDeseja adicionar mais um aluno? ['S' para sim/'N' para nao]: ");
+        scanf(" %c", &add);
+
     }
 
     // if (nova_nota >= 0.0 && nova_nota <= 10.0) { // Regra do TAD
@@ -70,7 +78,7 @@ int atribui_nota(Aluno a[], int *quant) {
 }
 
 // imprimir para ver se deu certo a struct
-int imprimir(Aluno a[], int quant){
+void imprimir(Aluno a[], int quant){
 
     int matricula;
     char ver_outro = 'S';
