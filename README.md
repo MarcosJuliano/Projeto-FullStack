@@ -1,1 +1,1 @@
-Adicionei a conexão do DB com C, o C recebe as informações e o DB armazena, adicionei um sistema de escolha e da para acessar a lista do BD pelo C e pedir as informações.
+Adicionei a remoção de notas e adicionei os aquivos iniciais do frontend.
