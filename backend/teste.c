@@ -31,13 +31,13 @@ int atribui_nota(Aluno a[], int *quant) {
         printf("\n################################\n");
         printf("Qual a matricula do aluno? ");
         scanf("%d", &matricula);
+        
+        a[*quant].matricula = matricula;
 
         if(validar_matricula(a, *quant, matricula)){
             printf("ERRO: matricula ja esta cadastrada!\n");
             continue;
         }
-
-        a[*quant].matricula = matricula;
 
         printf("Qual o nome do aluno? ");
         scanf("%99s", a[*quant].nome);
@@ -54,15 +54,23 @@ int atribui_nota(Aluno a[], int *quant) {
         //Gravar os alunos no BD
         if(!banco_inserir_alunos(a[*quant].matricula, a[*quant].nome, a[*quant].nota)){
             printf("Falha ao gravar o aluno no banco.\n");
-            continue;
+            
+            printf("\nDeseja Continuar? ['S' para sim/'N' para nao]: ");
+            scanf(" %c", &add);
+            if(add == 'N'){
+                break;
+            } else {
+                continue;
+            }
         }
-
-        printf("Aluno cadastrado com sucesso!\n");
-
-        (*quant)++;
         
         printf("\nDeseja adicionar mais um aluno? ['S' para sim/'N' para nao]: ");
         scanf(" %c", &add);
+
+        if(add == 'S'){
+            (*quant)++;
+            printf("Aluno cadastrado com sucesso!\n");
+        }
 
     }
 
@@ -75,6 +83,36 @@ int atribui_nota(Aluno a[], int *quant) {
     printf("\n======== PROCESSO FINALIZADO COM SUCESSO! ========");
     printf("\n==================================================\n");
     return 1;
+}
+
+void remover_nota(void){
+   int matricula;
+   int resultado;
+   char remover_outro = 'S';
+
+    while (remover_outro == 'S')
+    {
+        printf("\nDeseja remover a nota de qual aluno [informe a matricula] ? ");
+        scanf("%d", &matricula);
+
+        resultado = banco_remover_aluno(matricula);
+
+        if (resultado == 1){
+            printf("\n=====================================================\n");
+            printf("Nota removida com sucesso!\n");
+            printf("Nota da matricula: %d removida.", matricula);
+            printf("\n=====================================================\n");
+        } else if (resultado == 0) {
+            printf("\n=====================================================\n");
+            printf("Nenhum aluno encontrado com esta matricula!");
+            printf("\n=====================================================\n");
+        } else {
+            printf("não foi possivel remover o auluno devido a um erro.\n");
+        }
+        
+        printf("\nDeseja remover outro aluno? ['S' para sim/'N' para nao]: ");
+        scanf(" %c", &remover_outro);
+    }
 }
 
 // imprimir para ver se deu certo a struct
@@ -141,6 +179,7 @@ int main(void){
         banco_listar_alunos();
         break;
     case 4: // Excluir notas
+        remover_nota();
         break;
     case 5: // Sair do programa
         printf("\n================================================");

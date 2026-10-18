@@ -10,4 +10,6 @@ void banco_listar_alunos(void); // mostra a lista de todos alunos
 
 int banco_buscar_aluno(int matricula, char nome[100], double *nota);
 
+int banco_remover_aluno(int matricula);
+
 #endif

@@ -173,7 +173,7 @@ void banco_listar_alunos(void){
     // Executa a consulta e mostra os resultados
     int encontrou = 0;
 
-    printf("\n=== Alunos Cadastrados ===\n");
+    printf("\n======= Alunos Cadastrados =======\n");
 
     while((resultado = sqlite3_step(stmt)) == SQLITE_ROW){
         int matricula = sqlite3_column_int(stmt, 0);
@@ -269,5 +269,72 @@ int banco_buscar_aluno(int matricula, char nome[100], double *nota){
     sqlite3_finalize(stmt);
     sqlite3_close(db);
 
+    return 0;
+}
+
+int banco_remover_aluno(int matricula){
+    sqlite3 *db = NULL;
+    sqlite3_stmt *stmt = NULL;
+
+    int resultado = sqlite3_open("alunos.db", &db);
+
+    if (resultado != SQLITE_OK)
+    {
+        printf("ERRO: erro ao abrir o banco: %s\n",
+        db ? sqlite3_errmsg(db) : "Erro desconhecido");
+
+        if (db != NULL)
+        {
+            sqlite3_close(db);
+        }
+
+        return -1;
+    }
+
+    const char *sql = "DELETE FROM alunos WHERE matricula = ?;";
+
+    resultado = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+
+    if(resultado != SQLITE_OK){
+        printf("Erro ao preparar a exclusao: %s\n",
+        sqlite3_errmsg(db));
+
+        sqlite3_close(db);
+        return -1;
+    }
+
+    resultado = sqlite3_bind_int(stmt, 1, matricula);
+
+    if (resultado != SQLITE_OK)
+    {
+        printf("Erro ao informar a matricula: %s\n",
+        sqlite3_errmsg(db));
+
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return -1;
+    }
+    
+    resultado = sqlite3_step(stmt);
+
+    if(resultado != SQLITE_DONE){
+        printf("Erro ao remover aluno: %s\n",
+        sqlite3_errmsg(db));
+
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return -1;
+    }
+
+    int removido = sqlite3_changes(db);
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    if (removido > 0)
+    {
+        return 1;
+    }
+    
     return 0;
 }
