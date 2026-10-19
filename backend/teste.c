@@ -1,6 +1,7 @@
 // TAD Aluno simples (conceito de regras e struct)
 #include <stdio.h>
 #include "banco.h"
+#include <string.h>
 
 // Apartir do momento que eu uso o BD a struct se torna menos usual
 
@@ -92,6 +93,7 @@ void atribuir_nota() {
 void remover_nota(void){
    int matricula;
    int resultado;
+   char nome[100];
    char remover_outro = 'S';
 
     while (remover_outro == 'S')
@@ -99,12 +101,12 @@ void remover_nota(void){
         printf("\nDeseja remover a nota de qual aluno [informe a matricula] ? ");
         scanf("%d", &matricula);
 
-        resultado = banco_remover_aluno(matricula);
+        resultado = banco_remover_aluno(matricula, nome);
 
         if (resultado == 1){
             printf("\n=====================================================\n");
             printf("Nota removida com sucesso!\n");
-            printf("Nota da matricula: %d removida.", matricula);
+            printf("Nota do aluno %s removida.", nome);
             printf("\n=====================================================\n");
         } else if (resultado == 0) {
             printf("\n=====================================================\n");
@@ -117,11 +119,16 @@ void remover_nota(void){
         printf("\nDeseja remover outro aluno? ['S' para sim/'N' para nao]: ");
         scanf(" %c", &remover_outro);
     }
+
+    printf("\n==================================================");
+    printf("\n======== PROCESSO FINALIZADO COM SUCESSO! ========");
+    printf("\n==================================================\n");
 }
 
 void modificar_nota(){
     int matricula;
     double nota;
+    char nome[100];
     char mod_outro = 'S';
 
     while (mod_outro == 'S')
@@ -132,13 +139,22 @@ void modificar_nota(){
         printf("\nQual nota nova voce quer adicionar? ");
         scanf("%lf", &nota);
 
-        int encontrou = banco_modificar_aluno(matricula, &nota);
+        // Limpa o lixo da string antes de usar
+        nome[0] = '\0';
+
+        int encontrou = banco_modificar_aluno(matricula, &nota, nome);
+
 
         if (encontrou == 1)
         {
-            printf("\n==================================================\n");
-            printf("O aluno com matricula: %d teve sua nota atualizada para: %.2f", matricula,nota);
-            printf("\n==================================================\n");
+           printf("\n==================================================\n");
+            // Se por acaso o nome vier vazio, exibe um texto padrão para evitar falha
+            if (strlen(nome) > 0) {
+                printf("O aluno %s teve sua nota atualizada para: %.2f\n", nome, nota);
+            } else {
+                printf("Nota atualizada para: %.2f (Aluno ID: %d)\n", nota, matricula);
+            }
+            printf("==================================================\n");
         } else if(encontrou == 0){
             printf("\n=====================================================\n");
             printf("Matricula invalida.");

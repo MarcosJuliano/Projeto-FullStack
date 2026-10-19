@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <sqlite3.h>
 #include "banco.h"
+#include <string.h>
 
 int banco_iniciar()
 {
@@ -272,7 +273,7 @@ int banco_buscar_aluno(int matricula, char nome[100], double *nota){
     return 0;
 }
 
-int banco_remover_aluno(int matricula){
+int banco_remover_aluno(int matricula, char *nome){
     sqlite3 *db = NULL;
     sqlite3_stmt *stmt = NULL;
 
@@ -289,6 +290,21 @@ int banco_remover_aluno(int matricula){
         }
 
         return -1;
+    }
+
+    // Consulta o nome do aluno para exibir na mensagem de sucesso
+    const char *sql_select = "SELECT nome FROM alunos WHERE matricula = ?;";
+    resultado = sqlite3_prepare_v2(db, sql_select, -1, &stmt, NULL);
+
+    if (resultado == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, matricula);
+        
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            if (sqlite3_column_text(stmt, 0) != NULL && nome != NULL) {
+                snprintf(nome, 100, "%s", (const char *)sqlite3_column_text(stmt, 0));
+            }
+        }
+        sqlite3_finalize(stmt);
     }
 
     const char *sql = "DELETE FROM alunos WHERE matricula = ?;";
@@ -328,7 +344,7 @@ int banco_remover_aluno(int matricula){
 
     int removido = sqlite3_changes(db);
 
-    sqlite3_finalize(stmt);
+    //sqlite3_finalize(stmt);
     sqlite3_close(db);
 
     if (removido > 0)
@@ -339,7 +355,7 @@ int banco_remover_aluno(int matricula){
     return 0;
 }
 
-int banco_modificar_aluno(int matricula, double *nota){
+int banco_modificar_aluno(int matricula, double *nota, char *nome){
     sqlite3 *db = NULL;
     sqlite3_stmt *stmt = NULL;
 
@@ -405,8 +421,23 @@ int banco_modificar_aluno(int matricula, double *nota){
         return 0;
     }
 
+    // Consulta o nome do aluno para exibir na mensagem de sucesso
+    const char *sql_select = "SELECT nome FROM alunos WHERE matricula = ?;";
+    resultado = sqlite3_prepare_v2(db, sql_select, -1, &stmt, NULL);
+
+    if (resultado == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, matricula);
+        
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            if (sqlite3_column_text(stmt, 0) != NULL && nome != NULL) {
+                snprintf(nome, 100, "%s", (const char *)sqlite3_column_text(stmt, 0));
+            }
+        }
+        sqlite3_finalize(stmt);
+    }
+
     // Liberar os recursos
-    sqlite3_finalize(stmt); // Essa função finaliza a instrução preparada e libera os recursos que o SQLite reservou para ela.
+    // sqlite3_finalize(stmt); // Essa função finaliza a instrução preparada e libera os recursos que o SQLite reservou para ela.
     sqlite3_close(db); // Essa função fecha a conexão com o banco de dados e libera os recursos associados a ela.
 
     printf("Nota atualizada no banco com sucesso!\n");

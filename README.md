@@ -1,1 +1,1 @@
-Adicionei a remoção de notas e adicionei os aquivos iniciais do frontend.
+Adicionei a API para o C e o HTML conversarem.
