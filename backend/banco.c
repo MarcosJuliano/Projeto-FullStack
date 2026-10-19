@@ -338,3 +338,77 @@ int banco_remover_aluno(int matricula){
     
     return 0;
 }
+
+int banco_modificar_aluno(int matricula, double *nota){
+    sqlite3 *db = NULL;
+    sqlite3_stmt *stmt = NULL;
+
+    int resultado = sqlite3_open("alunos.db", &db);
+
+    if (resultado != SQLITE_OK)
+    {
+        printf("ERRO: erro ao abrir o banco: %s\n",
+        db ? sqlite3_errmsg(db) : "Erro desconhecido");
+
+        if (db != NULL)
+        {
+            sqlite3_close(db);
+        }
+
+        return -1;
+    }
+
+    const char *sql = 
+    "UPDATE alunos SET nota = ? WHERE matricula = ?;";
+
+    resultado = sqlite3_prepare_v2(
+        db, // conexão usada
+        sql, // qual comando sera preparado
+        -1, // o tamanho do texto sera definido automaticamente
+        &stmt, // onde sera colocada as intruções
+        NULL 
+    );
+
+    if(resultado != SQLITE_OK){
+        printf("ERRO: erro ao preparar o UPDATE: %s\n",
+        sqlite3_errmsg(db));
+
+        sqlite3_close(db);
+        return 0;
+    }
+
+    // Adicionar os valores lidos pelo teste.c para a interrogação
+    resultado = sqlite3_bind_int(stmt, 2, matricula); // Matricula
+
+    if(resultado == SQLITE_OK){ // Nota
+        resultado = sqlite3_bind_double(stmt, 1, *nota);
+    }
+
+    if(resultado != SQLITE_OK){
+        printf("ERRO: erro ao modificar os valores: %s\n",
+               sqlite3_errmsg(db));
+        
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return 0;
+    }
+
+    // apos todo passos acima, aqui o stmt tem que voltar SQLITE_DONE
+    resultado = sqlite3_step(stmt);
+
+    if(resultado != SQLITE_DONE){
+        printf("ERRO: erro ao modificar a nota%s\n",
+                sqlite3_errmsg(db));
+
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return 0;
+    }
+
+    // Liberar os recursos
+    sqlite3_finalize(stmt); // Essa função finaliza a instrução preparada e libera os recursos que o SQLite reservou para ela.
+    sqlite3_close(db); // Essa função fecha a conexão com o banco de dados e libera os recursos associados a ela.
+
+    printf("Nota atualizada no banco com sucesso!\n");
+    return 1;
+}
