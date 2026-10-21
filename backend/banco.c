@@ -2,6 +2,9 @@
 #include <sqlite3.h>
 #include "banco.h"
 #include <string.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <stddef.h>
 
 int banco_iniciar()
 {
@@ -442,4 +445,206 @@ int banco_modificar_aluno(int matricula, double *nota, char *nome){
 
     printf("Nota atualizada no banco com sucesso!\n");
     return 1;
+}
+
+// Adicionar o texto ao buffer sem ultrapassar o espaço que tem. Retorna 1 em sucesso e 0 se não tiver espaço suficiente.
+
+static int adicionar_texto(
+    char *buffer,
+    size_t tamanho,
+    size_t *posicao,
+    const char *formato,
+    ...
+){
+    if (*posicao >= tamanho)
+    {
+        return 0;
+    }
+
+    va_list argumentos;
+    va_start(argumentos, formato);
+
+    int escritos = vsnprintf(
+        buffer + *posicao,
+        tamanho - *posicao,
+        formato,
+        argumentos
+    );
+
+    va_end(argumentos);
+
+    if (escritos < 0 || (size_t) escritos >= tamanho - *posicao)
+    {
+        return 0;
+    }
+
+    *posicao += (size_t) escritos;
+    return 1;   
+}
+
+static int adicionar_string_json(
+    char *buffer,
+    size_t tamanho,
+    size_t *posicao,
+    const unsigned char *texto
+){
+    if (!adicionar_texto(buffer, tamanho, posicao, "\""))
+    {
+        return 0;
+    }
+
+    if (texto == NULL)
+    {
+        texto = (const unsigned char *) "";
+    }
+    
+    for (const unsigned char *p = texto; *p != '\0'; p++)
+    {
+        switch (*p)
+        {
+        case '"':
+            if (!adicionar_texto(buffer, tamanho, posicao, "\\\""))
+            {
+                return 0;
+            }
+            
+            break;
+        case '\\':
+            if (!adicionar_texto(buffer,tamanho, posicao, "\\\\"))
+            {
+                return 0;
+            }
+            break;
+        case '\f':
+            if (!adicionar_texto(buffer, tamanho, posicao, "\\f"))
+            {
+                return 0;
+            }
+            break;
+        case '\n':
+            if (!adicionar_texto(buffer, tamanho, posicao, "\\n")) {
+                return 0;
+            }
+            break;
+        case '\r':
+            if (!adicionar_texto(buffer, tamanho, posicao, "\\r")) {
+                return 0;
+            }
+            break;
+        case '\t':
+            if (!adicionar_texto(buffer, tamanho, posicao, "\\t")) {
+                return 0;
+            }
+            break;
+        default:
+            if (*p < 0x20)
+            {
+                if (!adicionar_texto(buffer,tamanho,posicao, "\\u%04x", *p))
+                {
+                    return 0;
+                }
+                
+            }else{
+                if (!adicionar_texto(buffer,tamanho,posicao, "%c", *p))
+                {
+                    return 0;
+                }
+            }
+            
+            break;
+        }
+    }
+    
+    return adicionar_texto(buffer, tamanho, posicao, "\"");
+}
+
+// Consultar todos alunos e escrever o resultado em JSON
+
+int banco_listar_alunos_json(char *buffer, size_t tamanho){
+    if (buffer == NULL || tamanho == 0)
+    {
+        return 0;
+    }
+
+    buffer[0] = '\0';
+
+    sqlite3 *db = NULL;
+    sqlite3_stmt *stmt = NULL;
+
+    int resultado = sqlite3_open("alunos.db", &db);
+
+    if (resultado != SQLITE_OK){
+        fprintf(stderr, "ERRO: erro ao abrir o banco: %s\n",
+                db != NULL ? sqlite3_errmsg(db) : "Erro desconhecido");
+        if (db != NULL)
+        {
+            sqlite3_close(db);
+        }
+        return 0;
+    }
+
+    const char *sql = "SELECT matricula, nome, nota FROM alunos;";
+
+    resultado = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+
+    if (resultado != SQLITE_OK)
+    {
+        fprintf(stderr, "ERRO: erro ao preparar consulta: %s\n",
+                sqlite3_errmsg(db));
+
+        sqlite3_close(db);
+        return 0;
+    }
+    
+    size_t posicao = 0;
+    int primeiro = 1;
+    int sucesso = adicionar_texto(buffer, tamanho, &posicao, "[");
+
+    while (sucesso && (resultado = sqlite3_step(stmt)) == SQLITE_ROW)
+    {
+        int matricula = sqlite3_column_int(stmt, 0);
+        const unsigned char *nome = sqlite3_column_text(stmt, 1);
+        double nota = sqlite3_column_double(stmt, 2);
+
+        if (!primeiro)
+        {
+            sucesso = adicionar_texto(buffer, tamanho, &posicao, ",");
+        }
+
+        if (sucesso)
+        {
+            sucesso = adicionar_texto(buffer, tamanho, &posicao, "{\"matricula\":%d,\"nome\":", matricula);
+        }
+        
+        if (sucesso)
+        {
+            sucesso = adicionar_string_json(buffer, tamanho, &posicao, nome);
+        }
+
+        if (sucesso)
+        {
+            sucesso = adicionar_texto(buffer, tamanho, &posicao, ",\"nota\":%.15g}", nota);
+        }
+        
+        primeiro = 0;
+        
+    }
+
+    if (resultado != SQLITE_DONE) {
+        sucesso = 0;
+    }
+
+    if (sucesso) {
+        sucesso = adicionar_texto(buffer, tamanho, &posicao, "]");
+    }
+
+    if (!sucesso) {
+        buffer[0] = '\0';
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    return sucesso ? 1 : 0;  
+    
 }
