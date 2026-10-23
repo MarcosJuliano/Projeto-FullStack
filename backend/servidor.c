@@ -1,6 +1,11 @@
 #include <stdio.h>
+#include <limits.h>
+#include <stdlib.h>
+
 #include "mongoose.h"
 #include "banco.h"
+
+static char frontend_dir[PATH_MAX];
 
 static void tratar_requisicao(struct mg_connection *c,
                               int ev,
@@ -22,8 +27,38 @@ static void tratar_requisicao(struct mg_connection *c,
         return;
     }
 
+    if (mg_match(hm->uri, mg_str("/api/alunos"), NULL)) {
+        // Reserva memória para montar o JSON, buffer tem capacidade para 65536 bytes.
+        char json[65536];
+
+        // Consulta o banco e escreve os alunos no buffer.
+        int sucesso = banco_listar_alunos_json(json,sizeof(json));
+
+        // Se a consulta ou a montagem do JSON falhar, devolve um erro HTTP 500.
+        if (!sucesso) {
+            mg_http_reply(
+                c,
+                500,
+                "Content-Type: application/json\r\n",
+                "{\"erro\":\"Falha ao listar alunos\"}\n"
+            );
+            return;
+        }
+
+        // Envia o JSON ao cliente com status HTTP 200.
+        mg_http_reply(
+            c,
+            200,
+            "Content-Type: application/json; charset=utf-8\r\n",
+            "%s\n",
+            json
+        );
+
+        return;
+    }
+
     struct mg_http_serve_opts opcoes = {
-        .root_dir = "/tmp/estudo-frontend"
+        .root_dir = frontend_dir
     };
 
     if (mg_match(hm->uri, mg_str("/"), NULL)) {
@@ -41,6 +76,14 @@ static void tratar_requisicao(struct mg_connection *c,
 
 int main(void)
 {
+
+    if (realpath("../frontend", frontend_dir) == NULL) {
+        perror("Erro ao localizar a pasta frontend");
+        return 1;
+    }
+
+    printf("Frontend localizado em: %s\n", frontend_dir);
+
     if (banco_iniciar() != 1) {
         fprintf(stderr, "Falha ao inicializar o banco.\n");
         return 1;

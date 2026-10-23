@@ -1,1 +1,1 @@
-Adicionei a API para o C e o HTML conversarem.
+Corrigi alguns codigos que n faziam sentido, o html agora recebe os dados do C.
